@@ -1,0 +1,160 @@
+* Notes
+<2022-10-21 Fri 17:06>: I used this command to install the necessary dependencies:
+#+begin_src bash
+bundle install
+rails db:migrate db:seed
+#+end_src
+
+I then modified the contents of the 'config/routes.rb' routes file with the following revisions:
+#+begin_src ruby
+Rails.application.routes.draw do
+  resources :birds, only: [:index, :show, :create]
+end
+#+end_src
+
+I then checked the available routes with the 'rails routes' command:
+#+begin_src bash
+samuelbanya@Samuels-MBP ~/hub/Development/code/phase-4/phase-4-rails-resources-create $ rails routes
+Prefix Verb URI Pattern          Controller#Action
+ birds GET  /birds(.:format)     birds#index
+       POST /birds(.:format)     birds#create
+  bird GET  /birds/:id(.:format) birds#show
+#+end_src
+
+I then modified the 'app/controllers/birds_controller.rb' controller file with the following revision:
+#+begin_src ruby
+class BirdsController < ApplicationController
+
+  # GET /birds
+  def index
+    birds = Bird.all
+    render json: birds
+  end
+
+  # GET /birds/:id
+  def show
+    bird = Bird.find_by(id: params[:id])
+    if bird
+      render json: bird
+    else
+      render json: { error: "Bird not found" }, status: :not_found
+    end
+  end
+
+  # POST /birds
+  def create
+    byebug
+  end
+
+end
+#+end_src
+
+I then ran the 'rails s' server command.
+
+I checked the related schema of the 'birds' table accordingly:
+#+begin_src ruby
+create_table "birds", force: :cascade do |t|
+  t.string "name"
+  t.string "species"
+  t.datetime "created_at", precision: 6, null: false
+  t.datetime "updated_at", precision: 6, null: false
+end
+#+end_src
+
+I then noted the lab's JS fetch request example:
+#+begin_src js
+fetch("http://localhost:3000/birds", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "Monk Parakeet",
+    species: "Myiopsitta monachus",
+  }),
+});
+#+end_src
+
+I then converted this example into a Postman request with the following revisions:
+- HTTP Verb Used: POST
+- URL Used: http://localhost:3000/birds
+- Body Used:
+#+begin_src json
+{
+    "name": "Monk Parakeet",
+    "species": "Myiopsitta monachus"
+}
+#+end_src
+
+I then clicked the 'Send' button in Postman accordingly which then provided with the following 'byebug' console':
+#+begin_src bash
+[15, 24] in /Users/samuelbanya/hub/Development/code/phase-4/phase-4-rails-resources-create/app/controllers/birds_controller.rb
+   15:       render json: { error: "Bird not found" }, status: :not_found
+   16:     end
+   17:   end
+   18:
+   19:   # POST /birds
+   20:   def create
+   21:     byebug
+=> 22:   end
+   23:
+   24: end
+(byebug) request
+#<ActionDispatch::Request POST "http://localhost:3000/birds" for ::1>
+(byebug) request.request_method
+"POST"
+(byebug) request.headers["Content-Type"]
+"application/json"
+(byebug) request.body.read()
+"{\n    \"name\": \"Monk Parakeet\",\n    \"species\": \"Myiopsitta monachus\"\n}"
+(byebug) JSON.parse(request.body.read())
+{"name"=>"Monk Parakeet", "species"=>"Myiopsitta monachus"}
+(byebug) params
+#<ActionController::Parameters {"name"=>"Monk Parakeet", "species"=>"Myiopsitta monachus", "controller"=>"birds", "action"=>"create", "bird"=>{"name"=>"Monk Parakeet", "species"=>"Myiopsitta monachus"}} permitted: false>
+#+end_src
+
+I then modified the 'app/controllers/birds_controller.rb' controller file with the following contents:
+#+begin_src ruby
+class BirdsController < ApplicationController
+
+  # GET /birds
+  def index
+    birds = Bird.all
+    render json: birds
+  end
+
+  # GET /birds/:id
+  def show
+    bird = Bird.find_by(id: params[:id])
+    if bird
+      render json: bird
+    else
+      render json: { error: "Bird not found" }, status: :not_found
+    end
+  end
+
+  # POST /birds
+  def create
+    bird = Bird.create(name: params[:name], species: params[:species])
+    render json: bird, status: :created
+  end
+
+end
+#+end_src
+
+After making the revision above the related controller file, I then clicked 'Send' in Postman for the same request and received the following JSON response which has an 'id' value for the object created by the server:
+#+begin_src json
+{
+    "id": 5,
+    "name": "Monk Parakeet",
+    "species": "Myiopsitta monachus",
+    "created_at": "2022-10-21T23:33:14.745Z",
+    "updated_at": "2022-10-21T23:33:14.745Z"
+}
+#+end_src
+
+<2022-10-21 Fri 18:34>: Check Your Understanding Answers:
+- Q1. When using fetch to make a POST request as opposed to a GET request, what additional property needs to be passed along with the method and headers?
+- Answer: The 'body' of the request needs to be passed in as well
+- Q2. How do we access this additional information to use it in our controller action?
+- Answer: We can access the additional information by utilizing the 'params' hash that contains all of the user's provided responses accordingly
